@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DynamoDB 구조 시각화</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .section {
+            margin-bottom: 60px;
+        }
+        
+        h2 {
+            color: #667eea;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            font-size: 1.8em;
+        }
+        
+        /* 테이블 스타일 */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9em;
+            letter-spacing: 1px;
+        }
+        
+        tbody tr {
+            transition: all 0.3s ease;
+        }
+        
+        tbody tr:hover {
+            background: #f8f9ff;
+            transform: scale(1.02);
+        }
+        
+        .key-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        
+        .partition-key {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .sort-key {
+            background: #4ecdc4;
+            color: white;
+        }
+        
+        /* 플로우차트 스타일 */
+        .flow-container {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 40px;
+            margin-top: 30px;
+        }
+        
+        .flow-step {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 500px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .flow-step:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .flow-step h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+        
+        .flow-step p {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .arrow {
+            text-align: center;
+            color: #667eea;
+            font-size: 2em;
+            margin: 10px 0;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        /* 아키텍처 다이어그램 */
+        .architecture {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            margin-top: 40px;
+            padding: 40px;
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8ecff 100%);
+            border-radius: 15px;
+        }
+        
+        .arch-box {
+            background: white;
+            border-radius: 12px;
+            padding: 25px 40px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            text-align: center;
+            min-width: 250px;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+        
+        .arch-box:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+        
+        .arch-box.app {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .arch-box.hash {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .servers {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .server-box {
+            background: white;
+            border: 3px solid #4ecdc4;
+            border-radius: 12px;
+            padding: 25px 35px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+        
+        .server-box:hover {
+            background: #4ecdc4;
+            color: white;
+            transform: translateY(-10px);
+        }
+        
+        .server-box h4 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        
+        .server-box p {
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+        
+        .replication {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1em;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+        
+        /* 설명 박스 */
+        .info-box {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-left: 5px solid #ff6b6b;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .info-box h4 {
+            color: #c0392b;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        .info-box ul {
+            margin-left: 20px;
+            color: #555;
+        }
+        
+        .info-box li {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+        
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            h2 {
+                font-size: 1.4em;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+            
+            th, td {
+                padding: 10px;
+            }
+            
+            .servers {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗄️ Amazon DynamoDB 구조 시각화</h1>
+        
+        <!-- 테이블 구조 섹션 -->
+        <div class="section">
+            <h2>📊 Users 테이블 구조</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Partition Key</th>
+                            <th>Sort Key</th>
+                            <th>이름</th>
+                            <th>나이</th>
+                            <th>이메일</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="key-badge partition-key">user001</span></td>
+                            <td><span class="key-badge sort-key">2025-11-20</span></td>
+                            <td>민규</td>
+                            <td>25</td>
+                            <td>a@b.com</td>
+                        </tr>
+                        <tr>
+                            <td><span class="key-badge partition-key">user001</span></td>
+                            <td><span class="key-badge sort-key">2025-11-21</span></td>
+                            <td>민규</td>
+                            <td>25</td>
+                            <td>a@b.com</td>
+                        </tr>
+                        <tr>
+                            <td><span class="key-badge partition-key">user002</span></td>
+                            <td><span class="key-badge sort-key">2025-11-20</span></td>
+                            <td>지민</td>
+                            <td>30</td>
+                            <td>c@d.com</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="info-box">
+                <h4>💡 키 설명</h4>
+                <ul>
+                    <li><strong>Partition Key (user001, user002)</strong>: 데이터가 저장될 파티션을 결정하는 고유 식별자</li>
+                    <li><strong>Sort Key (날짜)</strong>: 같은 Partition 내에서 데이터를 정렬하는 키 (선택사항)</li>
+                    <li>Partition Key + Sort Key 조합으로 각 항목을 고유하게 식별</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 데이터 처리 플로우 -->
+        <div class="section">
+            <h2>🔄 데이터 처리 플로우</h2>
+            <div class="flow-container">
+                <div class="flow-step">
+                    <h3>1️⃣ 애플리케이션 요청</h3>
+                    <p>사용자가 데이터 읽기/쓰기 요청을 보냄</p>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="flow-step">
+                    <h3>2️⃣ Partition Key 해시 계산</h3>
+                    <p>DynamoDB가 Partition Key를 해시하여<br>데이터를 저장할 특정 파티션 선택</p>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="flow-step">
+                    <h3>3️⃣ Partition 서버 접근</h3>
+                    <p><strong>읽기</strong>: 밀리초 단위로 빠른 응답<br>
+                    <strong>쓰기</strong>: 로그 기록 후 데이터 저장</p>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="flow-step">
+                    <h3>4️⃣ 다중 AZ 복제</h3>
+                    <p>데이터를 여러 가용 영역(AZ)의 서버에 자동 복제<br>
+                    → 내결함성 확보 및 고가용성 보장</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 아키텍처 다이어그램 -->
+        <div class="section">
+            <h2>🏗️ 시스템 아키텍처</h2>
+            <div class="architecture">
+                <div class="arch-box app">
+                    <h3>📱 애플리케이션</h3>
+                    <p>사용자 요청 발생</p>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="arch-box hash">
+                    <h3>🔑 Partition Key 해싱</h3>
+                    <p>해시 함수로 파티션 결정</p>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="servers">
+                    <div class="server-box">
+                        <h4>🖥️ 서버 A</h4>
+                        <p>(AZ1 - Seoul)</p>
+                    </div>
+                    <div class="server-box">
+                        <h4>🖥️ 서버 B</h4>
+                        <p>(AZ2 - Seoul)</p>
+                    </div>
+                    <div class="server-box">
+                        <h4>🖥️ 서버 C</h4>
+                        <p>(AZ3 - Seoul)</p>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="replication">
+                    ✅ 다중 AZ 복제 완료 - 내결함성 확보
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <h4>🛡️ 고가용성 보장</h4>
+                <ul>
+                    <li><strong>Multi-AZ 복제</strong>: 데이터가 최소 3개의 가용 영역에 자동으로 복제됨</li>
+                    <li><strong>내결함성</strong>: 하나의 서버가 다운되어도 다른 서버에서 즉시 서비스 제공</li>
+                    <li><strong>자동 복구</strong>: 장애 발생 시 자동으로 정상 서버로 트래픽 전환</li>
+                    <li><strong>밀리초 응답</strong>: SSD 기반 스토리지로 초고속 읽기/쓰기 처리</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
